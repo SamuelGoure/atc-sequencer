@@ -1,0 +1,174 @@
+{
+  "info": {
+    "name": "ATC-Sequencer API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "Flights",
+      "item": [
+        {
+          "name": "Créer un vol commercial",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightId\": \"AF123\",\n  \"callSign\": \"Air France 123\",\n  \"origin\": \"CDG\",\n  \"destination\": \"ABJ\",\n  \"eta\": \"2026-06-16T14:00:00\",\n  \"category\": \"COMMERCIAL\",\n  \"runway\": \"A\",\n  \"delayMinutes\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer un vol médical (priorité max)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightId\": \"MED01\",\n  \"callSign\": \"MedAir 01\",\n  \"origin\": \"LYS\",\n  \"destination\": \"CDG\",\n  \"eta\": \"2026-06-16T14:30:00\",\n  \"category\": \"MEDICAL\",\n  \"runway\": \"B\",\n  \"delayMinutes\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer un vol militaire (priorité 2)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightId\": \"MIL01\",\n  \"callSign\": \"Armée 01\",\n  \"origin\": \"ORY\",\n  \"destination\": \"MRS\",\n  \"eta\": \"2026-06-16T14:15:00\",\n  \"category\": \"MILITARY\",\n  \"runway\": \"C\",\n  \"delayMinutes\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer un vol en retard critique (35 min)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightId\": \"EZY456\",\n  \"callSign\": \"EasyJet 456\",\n  \"origin\": \"NCE\",\n  \"destination\": \"CDG\",\n  \"eta\": \"2026-06-16T14:45:00\",\n  \"category\": \"COMMERCIAL\",\n  \"runway\": \"D\",\n  \"delayMinutes\": 35\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer un conflit de piste (même piste que AF123, ±3 min)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightId\": \"BA789\",\n  \"callSign\": \"British Airways 789\",\n  \"origin\": \"LHR\",\n  \"destination\": \"CDG\",\n  \"eta\": \"2026-06-16T14:03:00\",\n  \"category\": \"COMMERCIAL\",\n  \"runway\": \"A\",\n  \"delayMinutes\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "Lister tous les vols",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/flights"
+          }
+        },
+        {
+          "name": "Détail d'un vol",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/flights/AF123"
+          }
+        },
+        {
+          "name": "Vol inexistant → 404",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/flights/INCONNU"
+          }
+        },
+        {
+          "name": "Changer statut → ACTIVE",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/AF123/status?status=ACTIVE",
+              "query": [{ "key": "status", "value": "ACTIVE" }]
+            }
+          }
+        },
+        {
+          "name": "Changer statut → DELAYED",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/AF123/status?status=DELAYED",
+              "query": [{ "key": "status", "value": "DELAYED" }]
+            }
+          }
+        },
+        {
+          "name": "Vols actifs uniquement",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/flights/active"
+          }
+        },
+        {
+          "name": "Vols en retard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/flights/delayed"
+          }
+        },
+        {
+          "name": "Vols par piste A",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/flights/runway/A"
+          }
+        },
+        {
+          "name": "Supprimer un vol",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/flights/BA789"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Séquencement",
+      "item": [
+        {
+          "name": "Calculer la séquence (ordre de priorité)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/sequence"
+          }
+        },
+        {
+          "name": "Détecter les conflits de piste",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/sequence/conflicts"
+          }
+        },
+        {
+          "name": "Reséquencer et sauvegarder en base",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sequence/resequence"
+          }
+        }
+      ]
+    }
+  ]
+}
