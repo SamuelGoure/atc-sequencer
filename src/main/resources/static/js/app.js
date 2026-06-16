@@ -50,7 +50,7 @@ function renderTable(flights) {
       <td>${categoryBadge(f.category)}</td>
       <td>${delayBadge(f.delayMinutes)}</td>
       <td>${statusBadge(f.status)}</td>
-      <td><span class="text-muted">${f.runway ?? '—'}</span></td>
+      <td><span class="runway-badge">${f.runway ?? '—'}</span></td>
       <td>
         <div class="d-flex gap-1">
           <select class="form-select form-select-sm bg-secondary text-white border-0"

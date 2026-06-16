@@ -176,6 +176,19 @@ body {
 }
 .pulse { animation: pulse-alert 1.5s infinite; }
 
+/* PISTE */
+.runway-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #1a2744;
+  color: #79c0ff;
+  border: 1px solid #388bfd;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
 /* BOUTONS TABLE */
 .btn-xs {
   padding: 2px 8px;
