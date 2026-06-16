@@ -54,10 +54,16 @@ function renderTable(flights) {
       <td>
         <div class="d-flex gap-1">
           <select class="form-select form-select-sm bg-secondary text-white border-0"
-            style="width:100px;font-size:0.75rem"
+            style="width:130px;font-size:0.75rem"
             onchange="updateStatus('${f.flightId}', this.value)">
-            ${['SCHEDULED','ACTIVE','DELAYED','LANDED','CANCELLED'].map(s =>
-              `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`
+            ${[
+              ['SCHEDULED', 'Planifié'],
+              ['ACTIVE',    'En approche'],
+              ['DELAYED',   'En retard'],
+              ['LANDED',    'Atterri'],
+              ['CANCELLED', 'Annulé']
+            ].map(([val, label]) =>
+              `<option value="${val}" ${f.status === val ? 'selected' : ''}>${label}</option>`
             ).join('')}
           </select>
           <button class="btn btn-danger btn-xs" onclick="deleteFlight('${f.flightId}')">
@@ -219,7 +225,14 @@ function categoryBadge(cat) {
 }
 
 function statusBadge(status) {
-  return `<span class="status-badge status-${status}">${status}</span>`;
+  const labels = {
+    SCHEDULED: 'Planifié',
+    ACTIVE:    'En approche',
+    DELAYED:   'En retard',
+    LANDED:    'Atterri',
+    CANCELLED: 'Annulé'
+  };
+  return `<span class="status-badge status-${status}">${labels[status] ?? status}</span>`;
 }
 
 function delayBadge(minutes) {
