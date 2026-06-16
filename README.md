@@ -381,20 +381,29 @@ docker-compose up --build
 
 ---
 
-## Ce que tu dois retenir pour un entretien
+## L'essentiel à retenir de ce projet
 
+**L'architecture en couches** est le principe fondamental.
+Chaque couche a un rôle unique et ne fait que ça :
 ```
-1. Spring Boot = framework Java pour créer des API REST rapidement
-
-2. L'architecture en couches :
-   Controller (reçoit) → Service (logique) → Repository (base de données)
-
-3. L'algorithme de séquencement :
-   MEDICAL > MILITARY > retard>30min > retard>15min > ETA
-
-4. Les tests automatisés avec JUnit prouvent que le code est correct
-
-5. Docker permet à n'importe qui de lancer le projet en 1 commande
-
-6. Le WebSocket permet les mises à jour en temps réel sans rechargement
+Controller  → reçoit la requête HTTP et retourne une réponse
+Service     → applique les règles métier (l'algorithme de priorité)
+Repository  → parle à la base de données
 ```
+
+**L'algorithme de séquencement** est le coeur du projet.
+Il répond à une vraie problématique : dans quel ordre les avions atterrissent ?
+```
+MEDICAL > MILITARY > retard > 30 min > retard > 15 min > ETA
+```
+
+**Les tests automatisés** garantissent que le code est correct.
+12 tests écrits une fois, exécutés à chaque modification.
+Si un test échoue, on sait immédiatement ce qui est cassé.
+
+**Le WebSocket** rend l'application vivante.
+Sans lui, le dashboard serait statique.
+Avec lui, chaque reséquencement met à jour tous les écrans connectés instantanément.
+
+**Docker** résout le problème "ça marche sur ma machine".
+Une seule commande `docker-compose up` et tout le monde a le même environnement.
