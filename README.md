@@ -1,460 +1,400 @@
-# ATC-Sequencer — Système de séquencement du trafic aérien
+# ATC-Sequencer — Guide complet pour comprendre le projet
 
-Système de séquencement intelligent du trafic aérien en architecture microservices Java/Spring Boot,
-inspiré du produit TopSky Sequencer de Thales.
-
----
-
-## Etat actuel du projet
-
-| Fichier | Etat | Note |
-|---|---|---|
-| `DemoApplication.java` | Propre | Point d'entrée Spring Boot |
-| `pom.xml` | A compléter | Dépendances JPA/MySQL/Lombok manquantes |
-| `application.properties` | A compléter | Config MySQL à ajouter |
-| `Flight.java` | Supprimé | Fichier cassé, à recréer proprement |
-| `HelloController.java` | Supprimé | Contrôleur de test inutile |
-| `SalutController.java` | Supprimé | Contrôleur de test inutile |
+> Ce fichier explique **tout** le projet, de zéro.
+> Même si tu n'as jamais fait de Java ou de Spring Boot, tu dois pouvoir comprendre.
 
 ---
 
-## Stack technique
+## C'est quoi ce projet ?
 
-- Java 21
-- Spring Boot 4.1.0
-- Maven
-- MySQL 8 (via Docker)
-- Lombok
-- WebSocket
-- Springdoc OpenAPI (Swagger)
-- JUnit 5 + Mockito
-- Docker + Docker Compose
-- GitHub Actions (CI/CD)
-- Grafana + Prometheus
+ATC-Sequencer est un système qui gère l'ordre d'atterrissage des avions.
+
+Imagine un contrôleur aérien qui doit décider quel avion atterrit en premier.
+Il doit respecter des règles :
+- Un vol médical (urgence) passe **toujours** en premier
+- Un vol militaire passe en **deuxième**
+- Un vol en retard de plus de 30 minutes passe avant les vols normaux
+- Les vols commerciaux et cargo passent **en dernier**, triés par heure d'arrivée
+
+Ce projet automatise ce travail avec une API web et un dashboard visuel.
 
 ---
 
-## Structure cible du projet
+## Les technologies utilisées — expliquées simplement
+
+### Java
+Le langage de programmation utilisé.
+C'est comme l'anglais pour parler à l'ordinateur.
+
+### Spring Boot
+Un outil Java qui permet de créer des applications web rapidement.
+Sans Spring Boot, il faudrait écrire 10 fois plus de code.
+Avec Spring Boot, on écrit `@RestController` et il crée automatiquement un serveur web.
+
+### Maven
+L'outil qui gère les dépendances du projet (comme npm pour JavaScript).
+Le fichier `pom.xml` liste tous les outils dont on a besoin.
+Quand tu fais `./mvnw install`, il télécharge tout automatiquement.
+
+### MySQL
+La base de données. C'est là où on stocke les vols.
+Pense à une feuille Excel géante, mais accessible depuis le code.
+
+### JPA / Hibernate
+Un outil qui fait le lien entre le code Java et la base de données MySQL.
+Au lieu d'écrire `SELECT * FROM flights`, on écrit `flightRepository.findAll()`.
+C'est beaucoup plus simple.
+
+### WebSocket
+Une technologie qui permet au serveur d'envoyer des données **en temps réel** au navigateur.
+Avec une API classique, le navigateur doit demander "y a-t-il du nouveau ?" toutes les X secondes.
+Avec WebSocket, le serveur dit directement "voilà du nouveau !" dès que ça change.
+
+### Docker
+Un outil qui crée des "boîtes" (containers) isolées pour chaque service.
+MySQL tourne dans sa boîte, l'application dans sa boîte, Grafana dans sa boîte.
+Ainsi, tout le monde peut lancer le projet avec une seule commande, peu importe son ordinateur.
+
+### JUnit / Mockito
+Des outils pour tester le code automatiquement.
+Au lieu de tester à la main "est-ce que ça marche ?", on écrit des tests qui vérifient tout seuls.
+
+### Grafana
+Un outil de visualisation de métriques (graphiques, statistiques en temps réel).
+
+---
+
+## La structure du projet — fichier par fichier
 
 ```
-src/main/java/com/example/demo/
-├── model/
-│   ├── Flight.java
-│   ├── FlightStatus.java
-│   └── FlightCategory.java
-├── repository/
-│   └── FlightRepository.java
-├── service/
-│   ├── FlightService.java
-│   └── SequencerService.java
-├── controller/
-│   ├── FlightController.java
-│   └── SequencerController.java
-├── websocket/
-│   ├── WebSocketConfig.java
-│   └── NotificationService.java
-└── DemoApplication.java
-```
-
----
-
-## Etapes de développement
-
-### ETAPE 0 — Outils à installer (Jour 0)
-
-```bash
-# Vérifier que tout est en place
-java -version     # doit afficher 21
-docker --version  # doit afficher 20+
-git --version     # doit afficher 2+
-```
-
-Outils nécessaires :
-- JDK 21 (déjà installé si `java -version` répond)
-- IntelliJ IDEA Community
-- Docker Desktop
-- Git
-- Postman
-
----
-
-### ETAPE 1 — Mettre à jour le pom.xml
-
-Ajouter les dépendances manquantes dans `pom.xml` :
-
-```xml
-<!-- JPA -->
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-data-jpa</artifactId>
-</dependency>
-
-<!-- MySQL -->
-<dependency>
-    <groupId>com.mysql</groupId>
-    <artifactId>mysql-connector-j</artifactId>
-    <scope>runtime</scope>
-</dependency>
-
-<!-- Lombok -->
-<dependency>
-    <groupId>org.projectlombok</groupId>
-    <artifactId>lombok</artifactId>
-    <optional>true</optional>
-</dependency>
-
-<!-- DevTools -->
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-devtools</artifactId>
-    <scope>runtime</scope>
-    <optional>true</optional>
-</dependency>
-
-<!-- WebSocket -->
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-websocket</artifactId>
-</dependency>
-
-<!-- Swagger / OpenAPI -->
-<dependency>
-    <groupId>org.springdoc</groupId>
-    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-    <version>2.5.0</version>
-</dependency>
-
-<!-- Mockito pour les tests -->
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-core</artifactId>
-    <scope>test</scope>
-</dependency>
+demo/
+│
+├── pom.xml                          ← La liste de courses de Maven
+│
+├── src/main/java/com/example/demo/
+│   │
+│   ├── DemoApplication.java         ← Le point de départ (le main)
+│   ├── DataInitializer.java         ← Insère 5 vols de test au démarrage
+│   │
+│   ├── model/                       ← Les "objets" du monde réel
+│   │   ├── Flight.java              ← Un avion avec ses infos
+│   │   ├── FlightStatus.java        ← L'état d'un vol (SCHEDULED, ACTIVE...)
+│   │   └── FlightCategory.java      ← Le type d'un vol (MEDICAL, MILITARY...)
+│   │
+│   ├── repository/                  ← La couche qui parle à la base de données
+│   │   └── FlightRepository.java    ← Les requêtes pour chercher des vols
+│   │
+│   ├── service/                     ← La logique métier (les vraies règles)
+│   │   ├── FlightService.java       ← Créer, modifier, supprimer des vols
+│   │   └── SequencerService.java    ← L'algorithme de priorité + détection conflits
+│   │
+│   ├── controller/                  ← Les "portes d'entrée" de l'API
+│   │   ├── FlightController.java    ← Routes pour gérer les vols (CRUD)
+│   │   └── SequencerController.java ← Routes pour la séquence et les conflits
+│   │
+│   └── websocket/                   ← Les notifications temps réel
+│       ├── WebSocketConfig.java     ← Configuration du WebSocket
+│       └── NotificationService.java ← Envoie des messages au navigateur
+│
+├── src/main/resources/
+│   ├── application.properties       ← La configuration de l'app (base de données, port...)
+│   └── static/                      ← Les fichiers du dashboard (HTML/CSS/JS)
+│       ├── index.html               ← La page du dashboard
+│       ├── css/style.css            ← Le style visuel (fond sombre, couleurs...)
+│       └── js/
+│           ├── app.js               ← La logique du dashboard (appels API)
+│           └── websocket.js         ← La connexion temps réel
+│
+├── src/test/                        ← Les tests automatisés
+│   ├── java/.../SequencerServiceTest.java   ← 8 tests pour l'algorithme
+│   ├── java/.../FlightControllerTest.java   ← 3 tests pour l'API
+│   └── resources/application.properties    ← Config pour les tests (base H2 en mémoire)
+│
+├── Dockerfile                       ← La recette pour créer l'image Docker de l'app
+├── docker-compose.yml               ← Lance tous les services d'un coup
+└── atc-sequencer.postman_collection.json  ← Les requêtes API prêtes à l'emploi
 ```
 
 ---
 
-### ETAPE 2 — Lancer MySQL via Docker
+## Comment fonctionne le code — expliqué simplement
 
-```bash
-docker run --name atc-mysql \
-  -e MYSQL_ROOT_PASSWORD=root \
-  -e MYSQL_DATABASE=atc_sequencer \
-  -p 3306:3306 \
-  -d mysql:8
+### 1. Le modèle — `Flight.java`
+
+C'est la représentation d'un vol dans le code.
+```
+Un vol a :
+- un ID (ex: "AF123")
+- un nom radio (callSign : "Air France 123")
+- une origine ("CDG") et une destination ("ABJ")
+- une heure d'arrivée prévue (eta)
+- un statut (SCHEDULED, ACTIVE, DELAYED, LANDED, CANCELLED)
+- une catégorie (COMMERCIAL, CARGO, MEDICAL, MILITARY)
+- un numéro de séquence (sa position dans la file)
+- un retard en minutes
+- une piste d'atterrissage ("A", "B", "C"...)
 ```
 
-Vérifier que le container tourne :
-```bash
-docker ps
-```
+Le `@Entity` au-dessus de la classe dit à Spring : "cette classe correspond à une table en base de données".
+Le `@Data` de Lombok génère automatiquement les getters/setters (évite 50 lignes de code répétitif).
 
 ---
 
-### ETAPE 3 — Configurer application.properties
+### 2. Le repository — `FlightRepository.java`
 
-Fichier : `src/main/resources/application.properties`
+C'est la couche qui parle à MySQL.
 
-```properties
-spring.application.name=atc-sequencer
-
-# Base de données
-spring.datasource.url=jdbc:mysql://localhost:3306/atc_sequencer
-spring.datasource.username=root
-spring.datasource.password=root
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-
-# JPA
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
-
-# Swagger
-springdoc.api-docs.path=/api-docs
-springdoc.swagger-ui.path=/swagger-ui.html
-
-# Port
-server.port=8080
-```
-
----
-
-### ETAPE 4 — Créer l'entité Flight
-
-Fichier : `src/main/java/com/example/demo/model/Flight.java`
-
-Champs requis :
-- `flightId` (String, clé primaire)
-- `callSign` (String)
-- `origin` (String)
-- `destination` (String)
-- `eta` (LocalDateTime)
-- `status` (Enum : SCHEDULED, ACTIVE, DELAYED, LANDED, CANCELLED)
-- `category` (Enum : COMMERCIAL, CARGO, MEDICAL, MILITARY)
-- `sequenceNumber` (Integer)
-- `delayMinutes` (Integer, défaut 0)
-- `runway` (String)
-
-Utiliser `@Entity`, `@Id`, et les annotations Lombok `@Data`, `@NoArgsConstructor`, `@AllArgsConstructor`.
-
----
-
-### ETAPE 5 — Créer le FlightRepository
-
-Fichier : `src/main/java/com/example/demo/repository/FlightRepository.java`
-
-Etend `JpaRepository<Flight, String>` avec ces méthodes personnalisées :
 ```java
+// Trouver tous les vols avec un certain statut
 List<Flight> findByStatus(FlightStatus status);
-List<Flight> findByCategory(FlightCategory category);
-List<Flight> findByDelayMinutesGreaterThan(int minutes);
-List<Flight> findByRunway(String runway);
-List<Flight> findByStatusOrderBySequenceNumberAsc(FlightStatus status);
+```
+
+**La magie :** Spring lit le nom de la méthode et génère automatiquement le SQL correspondant.
+`findByStatus` devient `SELECT * FROM flights WHERE status = ?`
+Tu n'écris jamais de SQL.
+
+---
+
+### 3. Le service — `FlightService.java`
+
+C'est là où on met les règles métier simples (créer, modifier, supprimer).
+
+```
+Créer un vol   → flightRepository.save(flight)
+Supprimer      → flightRepository.deleteById(id)
+Changer statut → chercher le vol, changer son statut, sauvegarder
 ```
 
 ---
 
-### ETAPE 6 — Créer les Controllers REST
+### 4. L'algorithme — `SequencerService.java`
 
-#### FlightController — routes CRUD
+C'est le coeur du projet. Il décide de l'ordre des vols.
 
-| Méthode | Route | Description |
-|---|---|---|
-| POST | `/api/flights` | Créer un vol |
-| GET | `/api/flights` | Lister tous les vols |
-| GET | `/api/flights/{id}` | Détail d'un vol |
-| PUT | `/api/flights/{id}/status` | Changer le statut |
-| DELETE | `/api/flights/{id}` | Supprimer un vol |
-| GET | `/api/flights/active` | Vols actifs uniquement |
-| GET | `/api/flights/delayed` | Vols en retard |
-| GET | `/api/flights/runway/{id}` | Vols par piste |
+```
+La règle de priorité (du plus urgent au moins urgent) :
+  priorité 1 → catégorie MEDICAL
+  priorité 2 → catégorie MILITARY
+  priorité 3 → retard > 30 minutes
+  priorité 4 → retard > 15 minutes
+  priorité 5 → tout le reste (trié par heure d'arrivée)
+```
 
-#### SequencerController — routes séquencement
-
-| Méthode | Route | Description |
-|---|---|---|
-| GET | `/api/sequence` | Liste triée par priorité |
-| GET | `/api/sequence/conflicts` | Conflits détectés |
-| POST | `/api/sequence/resequence` | Recalcule et sauvegarde |
+La détection de conflit :
+```
+Deux vols sont en conflit si :
+  → ils sont sur la MÊME piste
+  → ET leurs heures d'arrivée sont à moins de 5 minutes d'écart
+```
 
 ---
 
-### ETAPE 7 — Algorithme de séquencement (SequencerService)
+### 5. Le controller — `FlightController.java`
 
-Ordre de priorité :
-1. Vols MEDICAL
-2. Vols MILITARY
-3. Vols avec `delayMinutes > 30`
-4. Vols avec `delayMinutes > 15`
-5. COMMERCIAL et CARGO (tri par ETA)
+C'est la "porte d'entrée" de l'API. Il reçoit les requêtes HTTP et répond.
 
-Méthodes à implémenter :
-- `computeSequence(List<Flight>)` — tri selon les priorités
-- `detectConflicts(List<Flight>)` — 2 vols sur la même piste à ±5 minutes
-- `resequence()` — recalcule et met à jour `sequenceNumber` en base
+```
+POST   /api/flights          → Crée un vol (reçoit JSON, retourne le vol créé)
+GET    /api/flights          → Retourne tous les vols en JSON
+GET    /api/flights/AF123    → Retourne le vol AF123 ou erreur 404
+PUT    /api/flights/AF123/status?status=ACTIVE → Change le statut
+DELETE /api/flights/AF123    → Supprime le vol
+```
 
----
-
-### ETAPE 8 — Notifications WebSocket
-
-Configuration : endpoint `/ws`, broker `/topic`
-
-Canaux :
-- `/topic/sequence` — nouvelle séquence calculée
-- `/topic/conflicts` — conflit détecté
-- `/topic/alerts` — vol en retard critique (> 30 min)
+**Comment ça marche :**
+- `@RestController` dit à Spring : "cette classe répond aux requêtes HTTP"
+- `@GetMapping("/api/flights")` dit : "cette méthode répond aux GET sur /api/flights"
+- Spring convertit automatiquement les objets Java en JSON
 
 ---
 
-### ETAPE 9 — Tests JUnit 5
+### 6. Le WebSocket — `NotificationService.java`
 
-Tests unitaires pour `SequencerService` :
-1. `medical_flight_should_have_highest_priority()`
-2. `military_flight_should_have_second_priority()`
-3. `delayed_30min_should_be_reprioritized()`
-4. `should_detect_conflict_on_same_runway()`
-5. `should_not_detect_conflict_different_runways()`
-6. `sequence_should_update_after_cancellation()`
-7. `empty_flight_list_should_return_empty_sequence()`
+Quand on reséquence les vols, le serveur envoie automatiquement :
+```
+/topic/sequence  → la nouvelle liste triée (le dashboard se met à jour)
+/topic/conflicts → les conflits détectés (alerte rouge)
+/topic/alerts    → les vols en retard critique (toast notification)
+```
 
-Tests d'intégration pour `FlightController` :
-8. `should_create_flight_and_return_201()`
-9. `should_return_404_for_unknown_flight()`
-10. `should_return_400_for_invalid_status()`
+Le navigateur est abonné à ces canaux via `websocket.js`.
+Dès que le serveur envoie quelque chose, le dashboard se met à jour **sans que tu recharges la page**.
 
-Lancer les tests :
+---
+
+### 7. Le dashboard — `index.html` + `app.js`
+
+C'est l'interface visuelle accessible sur `http://localhost:8080`.
+
+```
+app.js fait :
+  → loadSequence()   : appelle GET /api/sequence et affiche le tableau
+  → loadConflicts()  : appelle GET /api/sequence/conflicts et affiche les alertes
+  → addFlight()      : appelle POST /api/flights avec les données du formulaire
+  → updateStatus()   : appelle PUT /api/flights/{id}/status
+  → deleteFlight()   : appelle DELETE /api/flights/{id}
+  → resequence()     : appelle POST /api/sequence/resequence
+  → Auto-refresh toutes les 10 secondes
+```
+
+---
+
+### 8. Les tests — `SequencerServiceTest.java`
+
+Les tests vérifient automatiquement que l'algorithme fonctionne.
+
+```
+Test 1 : un vol MEDICAL doit toujours être en position 1
+Test 2 : un vol MILITARY doit être en position 2
+Test 3 : un vol avec 35 min de retard passe avant un commercial
+Test 4 : deux vols sur la même piste à ±3 min → conflit détecté
+Test 5 : deux vols sur des pistes différentes → pas de conflit
+Test 6 : les vols LANDED et CANCELLED sont exclus de la séquence
+Test 7 : une liste vide retourne une séquence vide
+```
+
+Ces 7 tests + 3 tests API + 1 test de démarrage = **12 tests au total**.
+Tous verts = le projet fonctionne correctement.
+
+---
+
+## Comment lancer le projet
+
+### Prérequis
+- Java 21 installé (`java -version`)
+- MySQL qui tourne en local
+- Docker Desktop ouvert (pour Grafana)
+
+### Étape 1 — Créer la base de données (une seule fois)
 ```bash
-mvn test
-```
-Objectif : 10/10 tests passent, couverture > 80%
-
----
-
-### ETAPE 10 — Docker
-
-#### Dockerfile (multi-stage build)
-
-```dockerfile
-FROM eclipse-temurin:21-jdk AS builder
-WORKDIR /app
-COPY . .
-RUN ./mvnw clean package -DskipTests
-
-FROM eclipse-temurin:21-jre
-WORKDIR /app
-COPY --from=builder /app/target/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS atc_sequencer;"
 ```
 
-#### docker-compose.yml
-
-Services :
-- `flight-service` (port 8080)
-- `mysql` (port 3306)
-- `grafana` (port 3000)
-
+### Étape 2 — Lancer l'application
 ```bash
-# Lancer tout le projet
+./mvnw spring-boot:run
+```
+Attendre de voir : `Started DemoApplication in X seconds`
+
+### Étape 3 — Ouvrir dans le navigateur
+```
+Dashboard  → http://localhost:8080
+Swagger    → http://localhost:8080/swagger-ui.html
+```
+
+### Étape 4 — Lancer les tests
+```bash
+./mvnw test
+```
+Résultat attendu : `Tests run: 12, Failures: 0, Errors: 0`
+
+### Étape 5 — Avec Docker (optionnel, pour tout lancer d'un coup)
+```bash
 docker-compose up --build
-
-# Voir les logs
-docker-compose logs -f flight-service
-
-# Arrêter et supprimer les volumes
-docker-compose down -v
 ```
+Cela lance MySQL + l'application + Grafana en une commande.
 
 ---
 
-### ETAPE 11 — CI/CD GitHub Actions
+## Les routes API — tableau complet
 
-Fichier : `.github/workflows/ci-cd.yml`
-
-Jobs :
-1. `build` — `mvn clean package`
-2. `test` — `mvn test` avec rapport de couverture
-3. `docker` — `docker-compose build`
-
-Déclenché sur push et pull_request sur `main`.
-
-```bash
-# Pousser sur GitHub
-git init
-git add .
-git commit -m "feat: initial ATC-Sequencer implementation"
-git remote add origin https://github.com/VOTRE_USERNAME/atc-sequencer.git
-git push -u origin main
-```
+| Méthode | URL | Ce que ça fait | Réponse |
+|---|---|---|---|
+| POST | `/api/flights` | Créer un vol | 201 + le vol |
+| GET | `/api/flights` | Tous les vols | 200 + liste JSON |
+| GET | `/api/flights/{id}` | Un vol précis | 200 ou 404 |
+| PUT | `/api/flights/{id}/status?status=ACTIVE` | Changer le statut | 200 ou 404 |
+| DELETE | `/api/flights/{id}` | Supprimer | 204 ou 404 |
+| GET | `/api/flights/active` | Vols actifs | 200 + liste |
+| GET | `/api/flights/delayed` | Vols en retard | 200 + liste |
+| GET | `/api/flights/runway/{piste}` | Vols par piste | 200 + liste |
+| GET | `/api/sequence` | Vols triés par priorité | 200 + liste |
+| GET | `/api/sequence/conflicts` | Conflits de piste | 200 + liste |
+| POST | `/api/sequence/resequence` | Recalcule tout | 200 + liste |
 
 ---
 
-### ETAPE 12 — Monitoring Grafana
+## Exemple de vol en JSON
 
-Accès : `http://localhost:3000` (login: admin / admin)
-
-Métriques à configurer :
-1. Nombre de vols actifs en temps réel
-2. Nombre de conflits détectés par heure
-3. Taux de vols en retard (%)
-4. Temps moyen de réponse API (ms)
-5. Nombre de reséquencements par heure
-
-Ajouter Spring Boot Actuator et Micrometer pour exposer les métriques sur `/actuator/metrics`.
-
----
-
-## Tester avec Postman
-
-Créer un vol :
-```
-POST http://localhost:8080/api/flights
-Content-Type: application/json
-
+```json
 {
   "flightId": "AF123",
   "callSign": "Air France 123",
   "origin": "CDG",
   "destination": "ABJ",
+  "eta": "2026-06-16T14:00:00",
   "category": "COMMERCIAL",
+  "status": "SCHEDULED",
   "runway": "A",
   "delayMinutes": 0
 }
 ```
 
-Lister les vols :
-```
-GET http://localhost:8080/api/flights
-```
-
-Changer le statut :
-```
-PUT http://localhost:8080/api/flights/AF123/status?status=ACTIVE
-```
-
-Calculer la séquence :
-```
-GET http://localhost:8080/api/sequence
-```
-
 ---
 
-## Checklist
+## Les 5 vols de test insérés au démarrage
 
-### Jour 1
-- [ ] Dépendances pom.xml mises à jour
-- [ ] MySQL lancé via Docker
-- [ ] application.properties configuré
-- [ ] Entité Flight + enums créés
-- [ ] FlightRepository créé
-- [ ] Routes REST CRUD fonctionnelles
-- [ ] Algorithme de séquencement opérationnel
-- [ ] Testé avec Postman
-
-### Jour 2
-- [ ] WebSocket notifications configuré
-- [ ] 10 tests JUnit écrits et passants
-- [ ] Dockerfile + docker-compose fonctionnels
-- [ ] Pipeline GitHub Actions qui passe
-- [ ] Code pushé sur GitHub
-
-### Jour 3
-- [ ] Dashboard Grafana configuré
-- [ ] README professionnel rédigé
-- [ ] Démo vidéo enregistrée (3 min)
+| ID | Nom | Catégorie | Retard | Priorité |
+|---|---|---|---|---|
+| MED001 | MedAir 01 | MEDICAL | 0 min | 1 (le premier) |
+| MIL002 | Armée 02 | MILITARY | 0 min | 2 |
+| AF123 | Air France 123 | COMMERCIAL | 35 min | 3 (retard critique) |
+| BA456 | British Airways | COMMERCIAL | 0 min | 4 |
+| DHL078 | DHL Cargo 78 | CARGO | 10 min | 5 |
 
 ---
 
 ## Commandes utiles
 
 ```bash
-# Voir les logs MySQL
-docker logs atc-mysql
-
-# Redémarrer les containers
-docker-compose restart
-
-# Reconstruire depuis zéro
-docker-compose down -v
-docker-compose up --build
+# Lancer l'application
+./mvnw spring-boot:run
 
 # Lancer les tests
-mvn test
+./mvnw test
 
-# Builder le projet
-mvn clean package -DskipTests
+# Builder le JAR (fichier exécutable)
+./mvnw clean package -DskipTests
 
-# Voir les ports utilisés
-docker-compose ps
+# Voir les logs MySQL Docker
+docker logs atc-mysql
+
+# Arrêter tous les containers Docker
+docker-compose down
+
+# Tout reconstruire depuis zéro
+docker-compose down -v
+docker-compose up --build
 ```
 
 ---
 
-## Pitch entretien (45 secondes)
+## Les erreurs fréquentes et leurs solutions
 
-> "J'ai développé ATC-Sequencer, un système de séquencement du trafic aérien en microservices Java/Spring Boot.
->
-> Le projet implémente un algorithme de priorisation basé sur des règles métier aéronautiques — vols médicaux, militaires, retards critiques — avec notification WebSocket en temps réel.
->
-> Côté qualité : 10 tests automatisés JUnit avec 85% de couverture, pipeline CI/CD GitHub Actions, déploiement Docker complet et monitoring Grafana.
->
-> C'est exactement l'approche DevOps et la culture qualité que vous décrivez sur TopSky Sequencer."
+| Erreur | Cause | Solution |
+|---|---|---|
+| `Access denied for user 'root'` | Mauvais mot de passe MySQL | Vérifier `application.properties` |
+| `Port 8080 already in use` | Une app tourne déjà sur 8080 | `kill $(lsof -t -i:8080)` |
+| `Port 3306 already in use` | MySQL local déjà lancé | Utiliser ce MySQL directement |
+| `Tests run: 0` | Mauvais dossier | Se placer dans `/IdeaProjects/demo` |
+| `BUILD FAILURE` sur compile | Erreur de code | Lire le message d'erreur en rouge |
+
+---
+
+## Ce que tu dois retenir pour un entretien
+
+```
+1. Spring Boot = framework Java pour créer des API REST rapidement
+
+2. L'architecture en couches :
+   Controller (reçoit) → Service (logique) → Repository (base de données)
+
+3. L'algorithme de séquencement :
+   MEDICAL > MILITARY > retard>30min > retard>15min > ETA
+
+4. Les tests automatisés avec JUnit prouvent que le code est correct
+
+5. Docker permet à n'importe qui de lancer le projet en 1 commande
+
+6. Le WebSocket permet les mises à jour en temps réel sans rechargement
+```
