@@ -1,7 +1,7 @@
 # ATC-Sequencer — Guide complet pour comprendre le projet
 
-> Ce fichier explique **tout** le projet, de zéro.
-> Même si tu n'as jamais fait de Java ou de Spring Boot, tu dois pouvoir comprendre.
+> Idée de présentation de **Samuel Gouré** à **Thales Group**
+> dans le cadre d'une candidature en alternance — poste Développeur Backend, équipe TopSky Sequencer.
 
 ---
 
